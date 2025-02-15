@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Watchlist{% endblock %}
+
+{% block content %}
+    <h1>📜 Meine Watchlist</h1>
+
+    {% if stocks %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Ticker</th>
+                <th>WKN</th>
+                <th>ISIN</th>
+                <th>Hinzugefügt am</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stocks %}
+            <tr>
+                <td><a href="{{ url_for('detail', ticker=stock[1]) }}">{{ stock[0] }}</a></td>
+                <td>{{ stock[1] }}</td>
+                <td>{{ stock[2] }}</td>
+                <td>{{ stock[3] }}</td>
+                <td>{{ stock[4] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>⚠️ Noch keine Aktien in der Watchlist.</p>
+    {% endif %}
+
+    <a href="{{ url_for('add_watchlist') }}" class="btn btn-success">➕ Neue Aktie hinzufügen</a>
+{% endblock %}

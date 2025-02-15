@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Aktie - Watchlist{% endblock %}
+
+{% block content %}
+    <h1>➕ Neue Aktie zur Watchlist hinzufügen</h1>
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="ticker" class="form-label">Ticker</label>
+            <input type="text" class="form-control" id="ticker" name="ticker" placeholder="Optional">
+        </div>
+        <div class="mb-3">
+            <label for="wkn" class="form-label">WKN</label>
+            <input type="text" class="form-control" id="wkn" name="wkn" placeholder="Optional">
+        </div>
+        <div class="mb-3">
+            <label for="isin" class="form-label">ISIN</label>
+            <input type="text" class="form-control" id="isin" name="isin" placeholder="Optional">
+        </div>
+        <div class="mb-3">
+            <label for="name" class="form-label">Name der Aktie</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Aktie hinzufügen</button>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-danger mt-3">{{ error }}</div>
+    {% endif %}
+{% endblock %}
