@@ -1,134 +1,147 @@
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
+import os
 from datetime import datetime
-import yfinance as yf
-import requests_cache
 import plotly.graph_objects as go
-import pandas as pd
+import yfinance as yf
 
 app = Flask(__name__)
 
-DB_PATH = "data/portfolio.db"
+# Absoluter Pfad zur Datenbank im `data/`-Ordner
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, "data", "portfolio.db")
 
-# ✅ Cache für `yfinance`, um unnötige Anfragen zu vermeiden (30 Minuten Cache)
-session = requests_cache.CachedSession('yfinance_cache', expire_after=1800)
+# Funktion für eine sichere DB-Verbindung mit absolutem Pfad
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
+# Startseite
 @app.route("/")
 def home():
     return render_template("home.html")
 
-@app.route("/portfolio")
-def portfolio():
-    return render_template("index.html")
-
+# Watchlist anzeigen
 @app.route("/watchlist")
 def watchlist():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT name, ticker, wkn, isin, added_date FROM watchlist")
+    cursor.execute("SELECT name, ticker, isin, wkn FROM watchlist")
     stocks = cursor.fetchall()
     conn.close()
+    return render_template("watchlist.html", watchlist=stocks)
 
-    return render_template("watchlist.html", stocks=stocks)
+# Portfolio anzeigen
+@app.route("/portfolio")
+def portfolio():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM portfolio")
+    stocks = cursor.fetchall()
+    conn.close()
+    return render_template("portfolio.html", portfolio=stocks)
 
+# Aktienkauf hinzufügen
+@app.route("/add_purchase/<ticker>", methods=["GET", "POST"])
+def add_purchase(ticker):
+    if request.method == "POST":
+        quantity = request.form["quantity"]
+        price = request.form["price"]
+        purchase_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO portfolio (ticker, quantity, price, purchase_date)
+            VALUES (?, ?, ?, ?)
+        """, (ticker, quantity, price, purchase_date))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for("watchlist"))
+
+    return render_template("add_purchase.html", ticker=ticker)
+
+# Aktienverkauf hinzufügen
+@app.route("/add_sale/<ticker>", methods=["GET", "POST"])
+def add_sale(ticker):
+    if request.method == "POST":
+        quantity = request.form["quantity"]
+        price = request.form["price"]
+        sale_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO sales (ticker, quantity, price, sale_date)
+            VALUES (?, ?, ?, ?)
+        """, (ticker, quantity, price, sale_date))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for("watchlist"))
+
+    return render_template("add_sale.html", ticker=ticker)
+
+# Aktien zur Watchlist hinzufügen
 @app.route("/add_watchlist", methods=["GET", "POST"])
 def add_watchlist():
-    error = None
-
     if request.method == "POST":
-        ticker = request.form.get("ticker", "").strip().upper()
-        wkn = request.form.get("wkn", "").strip()
-        isin = request.form.get("isin", "").strip()
-        name = request.form.get("name", "").strip()
+        name = request.form["name"]
+        ticker = request.form["ticker"]
+        isin = request.form["isin"]
+        wkn = request.form["wkn"]
+        added_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        if not (ticker or wkn or isin):
-            error = "Bitte mindestens einen Identifikator (Ticker, WKN oder ISIN) eingeben!"
-        elif not name:
-            error = "Bitte einen Namen für die Aktie eingeben!"
-        else:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            added_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cursor.execute("""
-                INSERT INTO watchlist (name, ticker, isin, wkn, added_date)
-                VALUES (?, ?, ?, ?, ?)
-            """, (name, ticker, isin, wkn, added_date))
-            conn.commit()
-            conn.close()
-            return redirect(url_for("watchlist"))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO watchlist (name, ticker, isin, wkn, added_date)
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, ticker, isin, wkn, added_date))
+        conn.commit()
+        conn.close()
 
-    return render_template("add_watchlist.html", error=error)
+        return redirect(url_for("watchlist"))
 
+    return render_template("add_watchlist.html")
+
+# Aktien-Detailseite
 @app.route("/detail/<ticker>")
 def detail(ticker):
-    stock = yf.Ticker(ticker, session=session)
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    selected_period = request.args.get("period", "6mo")
-    selected_indicator = request.args.get("indicator", "None")
+    # Hole die allgemeinen Aktieninformationen
+    cursor.execute("SELECT * FROM watchlist WHERE ticker = ?", (ticker,))
+    stock = cursor.fetchone()
 
-    try:
-        info = stock.info
-        chart_url = f"https://finance.yahoo.com/chart/{ticker}"
+    # Hole die Kaufdaten
+    cursor.execute("SELECT * FROM portfolio WHERE ticker = ?", (ticker,))
+    purchases = cursor.fetchall()
 
-        df = stock.history(period=selected_period)
-        df.reset_index(inplace=True)
+    conn.close()
 
-        if selected_indicator == "SMA":
-            df["SMA_20"] = df["Close"].rolling(window=20, min_periods=1).mean()
-        elif selected_indicator == "EMA":
-            df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
+    # Aktienkursdaten abrufen
+    stock_data = yf.Ticker(ticker).history(period="1y")
 
-        chart_html = generate_plotly_chart(df, ticker, selected_indicator)
-
-        all_time_high = df["Close"].max()
-
-        stock_data = {
-            "name": info.get("longName", "Unbekannt"),
-            "ticker": ticker,
-            "isin": info.get("isin", "N/A"),
-            "wkn": info.get("symbol", "N/A"),
-            "sector": info.get("sector", "N/A"),
-            "industry": info.get("industry", "N/A"),
-            "market_cap": f"{info.get('marketCap', 'N/A'):,}" if info.get("marketCap") else "N/A",
-            "52w_high": info.get("fiftyTwoWeekHigh", "N/A"),
-            "52w_low": info.get("fiftyTwoWeekLow", "N/A"),
-            "all_time_high": all_time_high,
-            "dividend_yield": info.get("dividendYield", "N/A"),
-            "dividend_rate": info.get("dividendRate", "N/A"),
-            "chart_url": chart_url,
-            "chart_html": chart_html,
-            "selected_period": selected_period,
-            "selected_indicator": selected_indicator
-        }
-    except Exception as e:
-        stock_data = {"error": f"Fehler beim Abrufen der Daten: {e}"}
-
-    return render_template("detail.html", stock=stock_data)
-
-def generate_plotly_chart(df, ticker, indicator):
+    # Plotly-Chart erstellen
     fig = go.Figure()
-
-    # Standard Linienchart für den Kursverlauf
-    fig.add_trace(go.Scatter(x=df["Date"], y=df["Close"], mode="lines", name="Schlusskurs"))
-
-    if indicator == "SMA":
-        fig.add_trace(go.Scatter(x=df["Date"], y=df["SMA_20"], mode="lines", name="SMA (20 Tage)"))
-    elif indicator == "EMA":
-        fig.add_trace(go.Scatter(x=df["Date"], y=df["EMA_20"], mode="lines", name="EMA (20 Tage)"))
-
-    y_min = df["Close"].min() * 0.98
-    y_max = df["Close"].max() * 1.02
+    fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data["Close"], mode="lines", name="Kursverlauf"))
 
     fig.update_layout(
-        title=f"Aktienkurs von {ticker}",
+        title=f"{ticker} - Kursverlauf",
         xaxis_title="Datum",
         yaxis_title="Preis",
-        xaxis_rangeslider_visible=True,
-        yaxis=dict(range=[y_min, y_max])
+        template="plotly_dark",
+        margin=dict(l=10, r=10, t=50, b=50),
     )
 
-    return fig.to_html(full_html=False)
+    plotly_chart = fig.to_html(full_html=False)
 
+    return render_template("detail.html", stock=stock, purchases=purchases, plotly_chart=plotly_chart)
+
+# App starten
 if __name__ == "__main__":
-    print("✅ Flask-App startet auf http://127.0.0.1:5001/")
-    app.run(debug=True, host="0.0.0.0", port=5001)
+    app.run(debug=True)

@@ -1,53 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}{{ stock.name }} - Details{% endblock %}
+{% block title %}Details zu {{ stock.ticker }}{% endblock %}
 
 {% block content %}
-    <h1>{{ stock.name }} ({{ stock.ticker }})</h1>
+    <h1>📊 {{ stock.name }} ({{ stock.ticker }})</h1>
 
-    {% if stock.error %}
-        <div class="alert alert-danger">{{ stock.error }}</div>
-    {% else %}
-        <!-- ✅ FIX: Richtiger Link zur `add_watchlist`-Seite -->
-        <a href="{{ url_for('add_watchlist') }}" class="btn btn-primary">➕ Aktie zur Watchlist hinzufügen</a>
+    <div class="row">
+        <!-- Aktieninfos -->
+        <div class="col-md-4">
+            <h3>📈 Aktieninformationen</h3>
+            <table class="table">
+                <tr><th>Ticker</th><td>{{ stock.ticker }}</td></tr>
+                <tr><th>ISIN</th><td>{{ stock.isin }}</td></tr>
+                <tr><th>WKN</th><td>{{ stock.wkn }}</td></tr>
+                <tr><th>Kurs</th><td id="current-price">Lädt...</td></tr>
+                <tr><th>All-Time-High</th><td id="all-time-high">Lädt...</td></tr>
+            </table>
+        </div>
 
-        <div class="row">
-            <!-- ✅ Linke Seite: Aktiendetails -->
-            <div class="col-md-4">
-                <table class="table table-striped">
-                    <tr><th>ISIN</th><td>{{ stock.isin }}</td></tr>
-                    <tr><th>WKN</th><td>{{ stock.wkn }}</td></tr>
-                    <tr><th>Sektor</th><td>{{ stock.sector }}</td></tr>
-                    <tr><th>Industrie</th><td>{{ stock.industry }}</td></tr>
-                    <tr><th>Marktkapitalisierung</th><td>{{ stock.market_cap }}</td></tr>
-                    <tr><th>52W-Hoch</th><td>{{ stock["52w_high"] }}</td></tr>
-                    <tr><th>52W-Tief</th><td>{{ stock["52w_low"] }}</td></tr>
-                    <tr><th>All-Time High</th><td>{{ stock.all_time_high }}</td></tr>
-                    <tr><th>Dividendenrendite</th><td>{{ stock.dividend_yield }}</td></tr>
-                    <tr><th>Jährliche Dividende</th><td>{{ stock.dividend_rate }}</td></tr>
-                </table>
-            </div>
+        <!-- Plotly Chart -->
+        <div class="col-md-8">
+            <h3>📉 Kursverlauf</h3>
+            {{ plotly_chart | safe }}
 
-            <!-- ✅ Rechte Seite: Chart & Buttons -->
-            <div class="col-md-8">
-                <b>Zeitraum:</b>
-                {% for period in ["1d", "7d", "1mo", "6mo", "1y", "5y", "max"] %}
-                    <a href="{{ url_for('detail', ticker=stock.ticker, period=period, indicator=stock.selected_indicator) }}" 
-                       class="btn {% if stock.selected_period == period %}btn-primary{% else %}btn-light{% endif %}">
-                        {{ period }}
-                    </a>
-                {% endfor %}
-                
-                <b>Indikatoren:</b>
-                {% for ind in ["None", "SMA", "EMA"] %}
-                    <a href="{{ url_for('detail', ticker=stock.ticker, period=stock.selected_period, indicator=ind) }}" 
-                       class="btn {% if stock.selected_indicator == ind %}btn-primary{% else %}btn-light{% endif %}">
-                        {{ ind }}
-                    </a>
-                {% endfor %}
-
-                <div>{{ stock.chart_html | safe }}</div>
+            <div class="btn-group mt-3">
+                <a href="{{ url_for('detail', ticker=stock.ticker, period='1d') }}" class="btn btn-secondary">1 Tag</a>
+                <a href="{{ url_for('detail', ticker=stock.ticker, period='1w') }}" class="btn btn-secondary">1 Woche</a>
+                <a href="{{ url_for('detail', ticker=stock.ticker, period='1m') }}" class="btn btn-secondary">1 Monat</a>
+                <a href="{{ url_for('detail', ticker=stock.ticker, period='1y') }}" class="btn btn-primary">1 Jahr</a>
             </div>
         </div>
-    {% endif %}
+    </div>
+
 {% endblock %}

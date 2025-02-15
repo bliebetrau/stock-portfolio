@@ -3,34 +3,30 @@
 {% block title %}Watchlist{% endblock %}
 
 {% block content %}
-    <h1>📜 Meine Watchlist</h1>
-
-    {% if stocks %}
+    <h1>📋 Meine Watchlist</h1>
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Name</th>
+                <th>Aktienname</th>
                 <th>Ticker</th>
-                <th>WKN</th>
                 <th>ISIN</th>
-                <th>Hinzugefügt am</th>
+                <th>WKN</th>
+                <th>Aktionen</th>
             </tr>
         </thead>
         <tbody>
-            {% for stock in stocks %}
+            {% for stock in watchlist %}
             <tr>
-                <td><a href="{{ url_for('detail', ticker=stock[1]) }}">{{ stock[0] }}</a></td>
-                <td>{{ stock[1] }}</td>
-                <td>{{ stock[2] }}</td>
-                <td>{{ stock[3] }}</td>
-                <td>{{ stock[4] }}</td>
+                <td><a href="{{ url_for('detail', ticker=stock.ticker) }}">{{ stock.name }}</a></td>
+                <td>{{ stock.ticker }}</td>
+                <td>{{ stock.isin }}</td>
+                <td>{{ stock.wkn }}</td>
+                <td>
+                    <a href="{{ url_for('add_purchase', ticker=stock.ticker) }}" class="btn btn-success btn-sm">➕</a>
+                    <a href="{{ url_for('add_sale', ticker=stock.ticker) }}" class="btn btn-danger btn-sm">➖</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-        <p>⚠️ Noch keine Aktien in der Watchlist.</p>
-    {% endif %}
-
-    <a href="{{ url_for('add_watchlist') }}" class="btn btn-success">➕ Neue Aktie hinzufügen</a>
 {% endblock %}
