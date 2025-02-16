@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio{% endblock %}
+
+{% block content %}
+    <h1>📋 Mein Portfolio</h1>
+    {% if portfolio %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Ticker</th>
+                <th>Anzahl</th>
+                <th>Ø Kaufpreis</th>
+                <th>Währung</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in portfolio %}
+            <tr>
+                <td><a href="{{ url_for('detail', ticker=stock['ticker']) }}">{{ stock['ticker'] }}</a></td>
+                <td>{{ stock['total_quantity'] }}</td>
+                <td>{{ stock['avg_price'] }} {{ stock['currency'] }}</td>
+                <td>{{ stock['currency'] }}</td>
+                <td><a class="btn btn-primary btn-sm" href="{{ url_for('detail', ticker=stock['ticker']) }}">Details</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-warning">Noch keine Aktien im Portfolio.</div>
+    {% endif %}
+{% endblock %}

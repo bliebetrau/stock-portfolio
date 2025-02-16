@@ -1,41 +1,8 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Portfolio Übersicht</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="container mt-4">
+{% extends "base.html" %}
 
-    <h1 class="mb-3">📊 Dein Portfolio</h1>
+{% block title %}Home - Stock Portfolio{% endblock %}
 
-    {% if portfolio %}
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Ticker</th>
-                <th>Anzahl</th>
-                <th>Ø Kaufpreis</th>
-                <th>Währung</th>
-                <th>Aktionen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for stock in portfolio %}
-            <tr>
-                <td><a href="{{ url_for('detail', ticker=stock['ticker']) }}">{{ stock['ticker'] }}</a></td>
-                <td>{{ stock['total_quantity'] }}</td>
-                <td>{{ stock['avg_price'] }} {{ stock['currency'] }}</td>
-                <td>{{ stock['currency'] }}</td>
-                <td><a class="btn btn-primary btn-sm" href="{{ url_for('detail', ticker=stock['ticker']) }}">Details</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="alert alert-warning">Noch keine Aktien im Portfolio.</div>
-    {% endif %}
-
-</body>
-</html>
+{% block content %}
+    <h1>Willkommen bei StockApp 📈</h1>
+    <p>Hier kommt später der Startseiteninhalt.</p>
+{% endblock %}

@@ -11,6 +11,7 @@
                 <th>Ticker</th>
                 <th>ISIN</th>
                 <th>WKN</th>
+                <th>Notizen</th>
                 <th>Aktionen</th>
             </tr>
         </thead>
@@ -19,12 +20,13 @@
             <tr>
                 <td><a href="{{ url_for('detail', ticker=stock.ticker) }}">{{ stock.name }}</a></td>
                 <td>{{ stock.ticker }}</td>
-                <td>{{ stock.isin }}</td>
-                <td>{{ stock.wkn }}</td>
+                <td>{{ stock.isin or '—' }}</td>
+                <td>{{ stock.wkn or '—' }}</td>
+                <td>{{ stock.notes or 'Keine Notizen' }}</td>
                 <td>
-                    <a href="{{ url_for('add_purchase', ticker=stock.ticker) }}" class="btn btn-success btn-sm">➕</a>
-                    <a href="{{ url_for('add_sale', ticker=stock.ticker) }}" class="btn btn-danger btn-sm">➖</a>
-                </td>
+                    <a href="{{ url_for('add_trade', trade_type='buy', ticker=stock.ticker) }}" class="btn btn-success btn-sm">➕</a>
+                    <a href="{{ url_for('add_trade', trade_type='sell', ticker=stock.ticker) }}" class="btn btn-danger btn-sm">➖</a>
+                </td>                
             </tr>
             {% endfor %}
         </tbody>

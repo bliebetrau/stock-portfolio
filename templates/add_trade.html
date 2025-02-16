@@ -1,20 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Kauf hinzufügen{% endblock %}
+{% block title %}Trade hinzufügen{% endblock %}
 
 {% block content %}
-<h1>📥 Kauf hinzufügen</h1>
+<h1>{% if trade_type == 'buy' %}📥 Kauf{% else %}📤 Verkauf{% endif %} hinzufügen</h1>
 
-<form method="POST" action="{{ url_for('add_purchase', ticker=ticker) }}">
+<form method="POST" action="{{ url_for('add_trade', ticker=ticker, trade_type=trade_type) }}">
     <div class="row">
         <div class="col-md-6">
             <div class="mb-3">
-                <label for="ticker" class="form-label">Ticker</label>
-                <input type="text" class="form-control" id="ticker" name="ticker" value="{{ ticker }}" readonly>
+                <label for="ticker">Wertpapier</label>
+                <select id="ticker" name="ticker" class="form-control" required>
+                    <option value="">Bitte wählen...</option>
+                </select>
             </div>
             <div class="mb-3">
-                <label for="name" class="form-label">Wertpapier</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{ name }}" readonly>
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" class="form-control" readonly>
             </div>
             <div class="mb-3">
                 <label for="date" class="form-label">Datum</label>
@@ -45,8 +47,14 @@
                 <label for="fees" class="form-label">Gebühren</label>
                 <input type="number" step="0.01" class="form-control" id="fees" name="fees" value="0" oninput="calculateTotal()">
             </div>
+            {% if trade_type == 'sell' %}
             <div class="mb-3">
-                <label for="total_cost" class="form-label">Gesamtbelastung</label>
+                <label for="taxes" class="form-label">Steuern</label>
+                <input type="number" step="0.01" class="form-control" id="taxes" name="taxes" value="0" oninput="calculateTotal()">
+            </div>
+            {% endif %}
+            <div class="mb-3">
+                <label for="total_cost" class="form-label">{% if trade_type == 'buy' %}Gesamtbelastung{% else %}Gesamterlös{% endif %}</label>
                 <input type="number" step="0.01" class="form-control" id="total_cost" name="total_cost" readonly>
             </div>
         </div>
@@ -56,7 +64,7 @@
         <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
     </div>
 
-    <button type="submit" class="btn btn-primary">Kauf speichern</button>
+    <button type="submit" class="btn btn-primary">{% if trade_type == 'buy' %}Kauf speichern{% else %}Verkauf speichern{% endif %}</button>
     <a href="{{ url_for('watchlist') }}" class="btn btn-secondary">Abbrechen</a>
 </form>
 
@@ -65,13 +73,38 @@ function calculateTotal() {
     let shares = parseFloat(document.getElementById("shares").value) || 0;
     let pricePerShare = parseFloat(document.getElementById("price_per_share").value) || 0;
     let fees = parseFloat(document.getElementById("fees").value) || 0;
+    let taxes = parseFloat(document.getElementById("taxes")?.value) || 0;
 
     let totalPrice = shares * pricePerShare;
-    let totalCost = totalPrice + fees;
+    let totalCost = totalPrice + fees + taxes;
 
     document.getElementById("total_price").value = totalPrice.toFixed(2);
     document.getElementById("total_cost").value = totalCost.toFixed(2);
 }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch("/watchlist_data")
+            .then(response => response.json())
+            .then(data => {
+                const tickerSelect = document.getElementById("ticker");
+                data.forEach(stock => {
+                    let option = document.createElement("option");
+                    option.value = stock.ticker;
+                    option.textContent = `${stock.ticker} - ${stock.name}`;
+                    tickerSelect.appendChild(option);
+                });
+    
+                // Automatische Namensbefüllung
+                tickerSelect.addEventListener("change", function () {
+                    const selectedTicker = this.value;
+                    const selectedStock = data.find(stock => stock.ticker === selectedTicker);
+                    document.getElementById("name").value = selectedStock ? selectedStock.name : "";
+                });
+            })
+            .catch(error => console.error("Fehler beim Laden der Watchlist:", error));
+    });
 </script>
 
 {% endblock %}

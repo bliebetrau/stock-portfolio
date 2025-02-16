@@ -1,31 +1,152 @@
 {% extends "base.html" %}
 
-{% block title %}Neue Aktie - Watchlist{% endblock %}
+{% block title %}Aktie zur Watchlist hinzufügen{% endblock %}
 
 {% block content %}
-    <h1>➕ Neue Aktie zur Watchlist hinzufügen</h1>
+    <h1>➕ Aktie zur Watchlist hinzufügen test</h1>
 
-    <form method="POST">
-        <div class="mb-3">
-            <label for="ticker" class="form-label">Ticker</label>
-            <input type="text" class="form-control" id="ticker" name="ticker" placeholder="Optional">
-        </div>
-        <div class="mb-3">
-            <label for="wkn" class="form-label">WKN</label>
-            <input type="text" class="form-control" id="wkn" name="wkn" placeholder="Optional">
-        </div>
-        <div class="mb-3">
-            <label for="isin" class="form-label">ISIN</label>
-            <input type="text" class="form-control" id="isin" name="isin" placeholder="Optional">
-        </div>
-        <div class="mb-3">
-            <label for="name" class="form-label">Name der Aktie</label>
-            <input type="text" class="form-control" id="name" name="name" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Aktie hinzufügen</button>
-    </form>
+    <!-- Suchfeld für den Unternehmensnamen -->
+    <div class="mb-3">
+        <label for="company_name" class="form-label">Unternehmensname</label>
+        <input type="text" id="company_name" class="form-control" placeholder="Apple, Microsoft, Tesla ..." required>
+        <button class="btn btn-primary mt-2" onclick="searchStock()">🔍 Suchen</button>
+    </div>
 
-    {% if error %}
-        <div class="alert alert-danger mt-3">{{ error }}</div>
-    {% endif %}
+    <!-- Ergebnisse der Suche -->
+    <div id="search_results" class="mt-4"></div>
+
+    <script>
+        function searchStock() {
+            const companyName = document.getElementById('company_name').value;
+            if (!companyName) {
+                alert("Bitte einen Unternehmensnamen eingeben.");
+                return;
+            }
+    
+            fetch(`/search_ticker?company_name=${companyName}`)
+                .then(response => response.json())
+                .then(data => {
+                    let resultsDiv = document.getElementById('search_results');
+                    resultsDiv.innerHTML = "<h3>🔍 Gefundene Aktien:</h3>";
+    
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML += "<p>❌ Keine Ergebnisse gefunden.</p>";
+                        return;
+                    }
+    
+                    let table = "<table class='table'><tr><th>Name</th><th>Symbol</th><th>Börse</th><th>Aktion</th></tr>";
+                    data.forEach(stock => {
+                        table += `<tr>
+                            <td>${stock.name}</td>
+                            <td>${stock.ticker}</td>
+                            <td>${stock.exchange}</td>
+                            <td>
+                                <button class="btn btn-success btn-sm" onclick="openStockDialog('${stock.name}', '${stock.ticker}')">➕</button>
+                            </td>
+                        </tr>`;
+                    });
+                    table += "</table>";
+    
+                    resultsDiv.innerHTML += table;
+                });
+        }
+    
+          function openStockDialog(name, ticker) {
+        console.log("📢 DEBUG: Name =", name, "Ticker =", ticker); // Debugging
+
+        // **Ticker bereinigen (entfernt Hochkomma, Leerzeichen & Sonderzeichen vorne/hinten)**
+        ticker = ticker.replace(/^[^\w]+|[^\w]+$/g, "");
+
+        // **Direkt die Werte in die Textfelder setzen**
+        document.getElementById("stock_name").value = name;
+        document.getElementById("stock_ticker").value = ticker;
+
+        console.log("✅ Werte korrekt in watchlist_form gesetzt:", name, ticker);
+
+        // ISIN automatisch holen
+        fetch(`/get_isin?ticker=${ticker}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("stock_isin").value = data.isin || "";
+            });
+
+        // Bootstrap Modal anzeigen
+        let stockModal = new bootstrap.Modal(document.getElementById('stockModal'));
+        stockModal.show();
+    }
+
+    
+    function addToWatchlist() {
+        let formData = new FormData(document.getElementById("watchlist_form"));
+
+        fetch("/add_watchlist", {
+            method: "POST",
+            body: new URLSearchParams(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                let stockModal = bootstrap.Modal.getInstance(document.getElementById('stockModal'));
+                stockModal.hide();
+            } else {
+                alert("❌ Fehler: " + data.error);
+            }
+        });
+    }
+    </script>
+    
+    
+<!-- Bootstrap Modal für Aktien-Hinzufügen -->
+<div class="modal fade" id="stockModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stockModalLabel">Aktie zur Watchlist hinzufügen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="watchlist_form" method="POST" action="{{ url_for('add_watchlist') }}">
+                    
+                    <!-- Aktienname (Nicht editierbar) -->
+                    <div class="mb-3">
+                        <label for="stock_name" class="form-label">Name:</label>
+                        <input type="text" class="form-control" id="stock_name" name="name" readonly>
+                    </div>
+
+                    <!-- Ticker (Nicht editierbar) -->
+                    <div class="mb-3">
+                        <label for="stock_ticker" class="form-label">Ticker:</label>
+                        <input type="text" class="form-control" id="stock_ticker" name="ticker" readonly>
+                    </div>
+
+                    <!-- ISIN (Falls nicht automatisch geladen) -->
+                    <div class="mb-3">
+                        <label for="stock_isin" class="form-label">ISIN:</label>
+                        <input type="text" class="form-control" id="stock_isin" name="isin" placeholder="Falls nicht automatisch geladen">
+                    </div>
+
+                    <!-- WKN (Optional) -->
+                    <div class="mb-3">
+                        <label for="stock_wkn" class="form-label">WKN:</label>
+                        <input type="text" class="form-control" id="stock_wkn" name="wkn" placeholder="Optional">
+                    </div>
+
+                    <!-- Notizen -->
+                    <div class="mb-3">
+                        <label for="stock_notes" class="form-label">Notizen:</label>
+                        <textarea class="form-control" id="stock_notes" name="notes" rows="3" placeholder="Hier kannst du Notizen zur Aktie hinzufügen"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Abbrechen</button>
+                <button type="submit" form="watchlist_form" class="btn btn-primary">✅ Speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    
 {% endblock %}
