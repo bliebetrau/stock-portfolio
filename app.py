@@ -189,22 +189,33 @@ def detail(ticker):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Hole die allgemeinen Aktieninformationen
+    # Hole die allgemeinen Aktieninformationen aus der Watchlist
     cursor.execute("SELECT * FROM watchlist WHERE ticker = ?", (ticker,))
     stock = cursor.fetchone()
-
-    # Hole die Kaufdaten
-    cursor.execute("SELECT * FROM portfolio WHERE ticker = ?", (ticker,))
-    purchases = cursor.fetchall()
-
     conn.close()
 
-    # Aktienkursdaten abrufen
-    stock_data = yf.Ticker(ticker).history(period="1y")
+    if not stock:
+        return "Aktie nicht gefunden", 404
 
-    # Plotly-Chart erstellen
+    # 📌 Yahoo Finance Daten abrufen
+    try:
+        stock_data = yf.Ticker(ticker)
+        hist_data = stock_data.history(period="1y")
+
+        # ✅ NEU: Aktuellen Kurs & ATH abrufen
+        current_price = stock_data.info.get("regularMarketPrice", "N/A")
+        all_time_high = max(hist_data["Close"]) if not hist_data.empty else "N/A"
+
+    except Exception as e:
+        print("Fehler beim Abrufen der Yahoo Finance Daten:", e)
+        current_price = "N/A"
+        all_time_high = "N/A"
+        hist_data = None
+
+    # 📊 Plotly-Chart erstellen
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data["Close"], mode="lines", name="Kursverlauf"))
+    if hist_data is not None and not hist_data.empty:
+        fig.add_trace(go.Scatter(x=hist_data.index, y=hist_data["Close"], mode="lines", name="Kursverlauf"))
 
     fig.update_layout(
         title=f"{ticker} - Kursverlauf",
@@ -216,7 +227,14 @@ def detail(ticker):
 
     plotly_chart = fig.to_html(full_html=False)
 
-    return render_template("detail.html", stock=stock, purchases=purchases, plotly_chart=plotly_chart)
+    # 📌 Detailseite mit Kurs und ATH rendern
+    return render_template(
+        "detail.html",
+        stock=stock,
+        current_price=current_price,
+        all_time_high=all_time_high,
+        plotly_chart=plotly_chart
+    )
 
 # App starten
 if __name__ == "__main__":

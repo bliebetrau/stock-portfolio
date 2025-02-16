@@ -13,8 +13,9 @@
                 <tr><th>Ticker</th><td>{{ stock.ticker }}</td></tr>
                 <tr><th>ISIN</th><td>{{ stock.isin }}</td></tr>
                 <tr><th>WKN</th><td>{{ stock.wkn }}</td></tr>
-                <tr><th>Kurs</th><td id="current-price">Lädt...</td></tr>
-                <tr><th>All-Time-High</th><td id="all-time-high">Lädt...</td></tr>
+                <tr><th>Kurs</th><td id="current-price">{{ current_price if current_price else "Keine Daten" }}</td></tr>
+                <tr><th>All-Time-High</th><td id="all-time-high">{{ all_time_high if all_time_high else "Keine Daten" }}</td></tr>
+                
             </table>
         </div>
 

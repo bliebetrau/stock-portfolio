@@ -9,19 +9,17 @@ DB_PATH = "data/portfolio.db"
 @portfolio.route("/portfolio")
 def show_portfolio():
     """Lädt die Portfolio-Daten aus der View und ergänzt sie um aktuelle Kursdaten."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # Ergebnisse als Dictionary abrufen
-    cursor = conn.cursor()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row  # Ergebnisse als Dictionary abrufen
+        cursor = conn.cursor()
 
-    # Portfolio-Daten abrufen
-    cursor.execute("SELECT * FROM portfolio_view")
-    portfolio_data = [dict(row) for row in cursor.fetchall()]  # In Liste von Dictionaries umwandeln
+        # Portfolio-Daten abrufen
+        cursor.execute("SELECT * FROM portfolio_view")
+        portfolio_data = [dict(row) for row in cursor.fetchall()]  # In Liste von Dictionaries umwandeln
 
-    # Trades-Daten abrufen (sortiert nach Datum absteigend)
-    cursor.execute("SELECT * FROM trades ORDER BY date DESC")
-    trades_data = [dict(row) for row in cursor.fetchall()]  # In Liste von Dictionaries umwandeln
-
-    conn.close()
+        # Trades-Daten abrufen (sortiert nach Datum absteigend)
+        cursor.execute("SELECT * FROM trades ORDER BY date DESC")
+        trades_data = [dict(row) for row in cursor.fetchall()]  # In Liste von Dictionaries umwandeln
 
     # **Summen-Variablen initialisieren**
     total_invested = 0
@@ -35,8 +33,9 @@ def show_portfolio():
         try:
             stock_data = yf.Ticker(ticker)
             current_price = stock_data.history(period="1d")["Close"].iloc[-1]  # Letzter Schlusskurs
-        except:
+        except Exception as e:
             current_price = None
+            print(f"Error fetching data for {ticker}: {e}")
 
         market_value = (stock["total_shares"] * current_price) if current_price else None
         profit_loss_absolute = (market_value - stock["total_invested"]) if market_value else None
