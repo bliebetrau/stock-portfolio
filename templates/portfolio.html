@@ -4,30 +4,135 @@
 
 {% block content %}
     <h1>📋 Mein Portfolio</h1>
+
     {% if portfolio %}
-    <table class="table table-striped">
+    <table class="table table-striped table-bordered table-hover">
         <thead>
             <tr>
+                <th>Aktienname</th>
                 <th>Ticker</th>
+                <th>ISIN</th>
+                <th>WKN</th>
                 <th>Anzahl</th>
                 <th>Ø Kaufpreis</th>
                 <th>Währung</th>
+                <th>Gesamtinvestition</th>
+                <th>Aktueller Kurs</th>
+                <th>Marktwert</th>
+                <th>Gewinn/Verlust absolut</th>
+                <th>Gewinn/Verlust %</th>
                 <th>Aktionen</th>
             </tr>
         </thead>
         <tbody>
             {% for stock in portfolio %}
             <tr>
-                <td><a href="{{ url_for('detail', ticker=stock['ticker']) }}">{{ stock['ticker'] }}</a></td>
-                <td>{{ stock['total_quantity'] }}</td>
-                <td>{{ stock['avg_price'] }} {{ stock['currency'] }}</td>
+                <td><a href="{{ url_for('detail', ticker=stock['ticker']) }}">{{ stock['name'] }}</a></td>
+                <td>{{ stock['ticker'] }}</td>
+                <td>{{ stock['isin'] or '—' }}</td>
+                <td>{{ stock['wkn'] or '—' }}</td>
+                <td>{{ stock['total_shares'] }}</td>
+                <td>{{ "%.2f"|format(stock['avg_buy_price']) }}</td>
                 <td>{{ stock['currency'] }}</td>
-                <td><a class="btn btn-primary btn-sm" href="{{ url_for('detail', ticker=stock['ticker']) }}">Details</a></td>
+                <td>{{ "%.2f"|format(stock['total_invested']) }}</td>
+                <td>{{ "%.2f"|format(stock['current_price']) if stock['current_price'] else '—' }}</td>
+                <td>{{ "%.2f"|format(stock['market_value']) if stock['market_value'] else '—' }}</td>
+                <td>
+                    {% if stock['profit_loss_absolute'] is not none %}
+                        <span class="{% if stock['profit_loss_absolute'] >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ "%.2f"|format(stock['profit_loss_absolute']) }}
+                        </span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% if stock['profit_loss_percentage'] is not none %}
+                        <span class="{% if stock['profit_loss_percentage'] >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ "%.2f"|format(stock['profit_loss_percentage']) }}%
+                        </span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('add_trade', trade_type='buy', ticker=stock['ticker']) }}" class="btn btn-success btn-sm">➕</a>
+                    <a href="{{ url_for('add_trade', trade_type='sell', ticker=stock['ticker']) }}" class="btn btn-danger btn-sm">➖</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-dark">
+                <td colspan="7"><strong>Gesamtsumme</strong></td>
+                <td><strong>{{ "%.2f"|format(total_invested) }}</strong></td>
+                <td></td>
+                <td><strong>{{ "%.2f"|format(total_market_value) }}</strong></td>
+                <td>
+                    <strong class="{% if total_profit_loss_absolute >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "%.2f"|format(total_profit_loss_absolute) }}
+                    </strong>
+                </td>
+                <td>
+                    <strong class="{% if total_profit_loss_percentage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "%.2f"|format(total_profit_loss_percentage) }}%
+                    </strong>
+                </td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div class="alert alert-warning">Noch keine Aktien im Portfolio.</div>
+    {% endif %}
+
+    <hr>
+
+    <h2>📊 Alle Trades</h2>
+    {% if trades %}
+    <table class="table table-striped table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Typ</th>
+                <th>Ticker</th>
+                <th>Name</th>
+                <th>Stück</th>
+                <th>Preis pro Aktie</th>
+                <th>Währung</th>
+                <th>Gesamtpreis</th>
+                <th>Gebühren</th>
+                <th>Steuern</th>
+                <th>Gesamtkosten</th>
+                <th>Notizen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in trades %}
+            <tr>
+                <td>{{ trade['date'] }}</td>
+                <td>
+                    {% if trade['type'] == 'buy' %}
+                        <span class="badge bg-success">Kauf</span>
+                    {% else %}
+                        <span class="badge bg-danger">Verkauf</span>
+                    {% endif %}
+                </td>
+                <td>{{ trade['ticker'] }}</td>
+                <td>{{ trade['name'] }}</td>
+                <td>{{ trade['shares'] }}</td>
+                <td>{{ "%.2f"|format(trade['price_per_share']) }}</td>
+                <td>{{ trade['currency'] }}</td>
+                <td>{{ "%.2f"|format(trade['total_price']) }}</td>
+                <td>{{ "%.2f"|format(trade['fees']) }}</td>
+                <td>{{ "%.2f"|format(trade['taxes']) }}</td>
+                <td>{{ "%.2f"|format(trade['total_cost']) }}</td>
+                <td>{{ trade['notes'] or '—' }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <div class="alert alert-warning">Noch keine Aktien im Portfolio.</div>
+    <div class="alert alert-secondary">Noch keine Trades durchgeführt.</div>
     {% endif %}
 {% endblock %}
