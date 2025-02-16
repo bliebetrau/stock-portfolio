@@ -51,7 +51,7 @@ def update_portfolio_view():
     # Falls die View bereits existiert, löschen wir sie zuerst
     cursor.execute("DROP VIEW IF EXISTS portfolio_view")
 
-    # Neue Portfolio-View erstellen
+   # Neue Portfolio-View erstellen (mit aktuellen Kursdaten)
     cursor.execute("""
         CREATE VIEW portfolio_view AS
         SELECT
@@ -64,15 +64,18 @@ def update_portfolio_view():
             CASE 
                 WHEN SUM(CASE WHEN t.type = 'buy' THEN t.shares ELSE 0 END) > 0 
                 THEN SUM(CASE WHEN t.type = 'buy' THEN t.total_cost ELSE 0 END) /
-                     SUM(CASE WHEN t.type = 'buy' THEN t.shares ELSE 0 END)
+                    SUM(CASE WHEN t.type = 'buy' THEN t.shares ELSE 0 END)
                 ELSE NULL
             END AS avg_buy_price,
-            COALESCE(SUM(CASE WHEN t.type = 'buy' THEN t.total_cost ELSE 0 END), 0) AS total_invested
+            COALESCE(SUM(CASE WHEN t.type = 'buy' THEN t.total_cost ELSE 0 END), 0) AS total_invested,
+            MAX(t.currency) AS currency
         FROM watchlist w
         LEFT JOIN trades t ON w.ticker = t.ticker
         GROUP BY w.ticker, w.name, w.isin, w.wkn
-        HAVING total_shares > 0
+        HAVING total_shares > 0;
+
     """)
+
 
     conn.commit()
     conn.close()

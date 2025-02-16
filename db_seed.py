@@ -14,12 +14,12 @@ def seed_database():
     cursor.execute("INSERT INTO watchlist (ticker, name, isin, wkn, added_date, notes) VALUES (?, ?, ?, ?, ?, ?)",
                    ("MSFT", "Microsoft Corporation", "US5949181045", "870747", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Langfristiges Investment"))
 
-    # Testdaten für Trades (Käufe & Verkäufe)
-    cursor.execute("INSERT INTO trades (ticker, name, date, type, shares, price_per_share, currency, total_price, fees, taxes, total_cost, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   ("AAPL", "Apple Inc.", "2025-02-16", "buy", 10, 145.50, "USD", 1455.00, 5.00, 0.00, 1460.00, "Testkauf"))
+    # Testdaten für Trades
+    cursor.execute("INSERT INTO trades (ticker, name, date, type, shares, price_per_share, currency, total_price, fees, total_cost, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                   ("AAPL", "Apple Inc.", "2025-02-16", "buy", 10, 145.50, "USD", 1455.00, 5.00, 1460.00, "Testkauf"))
 
-    cursor.execute("INSERT INTO trades (ticker, name, date, type, shares, price_per_share, currency, total_price, fees, taxes, total_cost, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   ("MSFT", "Microsoft Corporation", "2025-02-16", "sell", 5, 320.00, "USD", 1600.00, 3.00, 10.00, 1613.00, "Teilverkauf mit Steuern"))
+    cursor.execute("INSERT INTO trades (ticker, name, date, type, shares, price_per_share, currency, total_price, fees, total_cost, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                   ("MSFT", "Microsoft Corporation", "2025-02-16", "buy", 5, 320.00, "USD", 1600.00, 3.00, 1597.00, "Teilverkauf"))
 
     conn.commit()
     conn.close()

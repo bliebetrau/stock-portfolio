@@ -48,7 +48,7 @@ def portfolio():
     conn.close()
     return render_template("portfolio.html", portfolio=stocks)
 
-@app.route("/add_trade/<trade_type>/<ticker>", methods=["GET", "POST"])
+@app.route("/add_trade/<ticker>/<trade_type>", methods=["GET", "POST"])
 def add_trade(trade_type, ticker):
     conn = sqlite3.connect("data/portfolio.db")
     cursor = conn.cursor()
