@@ -7,11 +7,22 @@ import yfinance as yf
 import requests  # <-- MUSS DA SEIN!
 from bs4 import BeautifulSoup
 from routes.portfolio import portfolio  # Import der Portfolio-Route
+from routes.aggregate_news import aggregate_news_bp
+from routes.dividend_stocks import bp as dividend_stocks_bp
 
 
 app = Flask(__name__)
 
+# Setzt einen geheimen Schlüssel für Session-Support
+app.config['SECRET_KEY'] = os.urandom(24)
+
+app.config['DEBUG'] = True  # Debug-Modus aktivieren
+
+
+
+app.register_blueprint(dividend_stocks_bp)
 app.register_blueprint(portfolio)
+app.register_blueprint(aggregate_news_bp)
 
 # Absoluter Pfad zur Datenbank im `data/`-Ordner
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -212,30 +223,66 @@ def detail(ticker):
         all_time_high = "N/A"
         hist_data = None
 
-    # 📊 Plotly-Chart erstellen
-    fig = go.Figure()
-    if hist_data is not None and not hist_data.empty:
-        fig.add_trace(go.Scatter(x=hist_data.index, y=hist_data["Close"], mode="lines", name="Kursverlauf"))
-
-    fig.update_layout(
-        title=f"{ticker} - Kursverlauf",
-        xaxis_title="Datum",
-        yaxis_title="Preis",
-        template="plotly_dark",
-        margin=dict(l=10, r=10, t=50, b=50),
-    )
-
-    plotly_chart = fig.to_html(full_html=False)
-
     # 📌 Detailseite mit Kurs und ATH rendern
     return render_template(
         "detail.html",
         stock=stock,
         current_price=current_price,
         all_time_high=all_time_high,
-        plotly_chart=plotly_chart
     )
+
+
+@app.route("/api/get_chart_data")
+def get_chart_data():
+    ticker = request.args.get("ticker")
+    period = request.args.get("period", "1y")  # Standard: 1 Jahr
+
+    if not ticker:
+        return jsonify({"error": "Kein Ticker angegeben"}), 400
+
+    # 🚀 Mapping für Intraday-Intervalle
+    period_mapping = {
+        "1d": ("1d", "5m"),   # 1 Tag → 5-Minuten-Kerzen
+        "5d": ("5d", "5m"),   # ✅ Fix: 5 Tage auch mit 5-Minuten-Kerzen holen
+        "1mo": ("1mo", "1h"), 
+        "3mo": ("3mo", "1d"), 
+        "6mo": ("6mo", "1d"), 
+        "1y": ("1y", "1d"), 
+        "2y": ("2y", "1d"), 
+        "5y": ("5y", "1wk"), 
+        "10y": ("10y", "1mo"), 
+        "ytd": ("ytd", "1d"),
+        "max": ("max", "1mo")
+    }
+
+
+    period, interval = period_mapping.get(period, ("1y", "1d"))
+
+    print(f"🟢 API-Request: Ticker={ticker}, Zeitraum={period}, Interval={interval}")
+
+    try:
+        stock = yf.Ticker(ticker)
+        hist_data = stock.history(period=period, interval=interval)
+
+        if hist_data.empty:
+            print(f"🔴 Keine Kursdaten für {ticker} mit Zeitraum {period}")
+            return jsonify({"error": "Keine Kursdaten gefunden"}), 404
+
+        print(f"✅ {len(hist_data)} Kursdaten erhalten für {ticker} ({period}, {interval})")
+
+        dates = hist_data.index.strftime("%Y-%m-%d %H:%M:%S").tolist()
+        prices = hist_data["Close"].tolist()
+
+        return jsonify({
+            "dates": dates,
+            "prices": prices
+        })
+
+    except Exception as e:
+        print(f"🔥 Fehler: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # App starten
 if __name__ == "__main__":
+    #print(app.url_map)
     app.run(debug=True)

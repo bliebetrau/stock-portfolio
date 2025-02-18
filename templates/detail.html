@@ -15,22 +15,235 @@
                 <tr><th>WKN</th><td>{{ stock.wkn }}</td></tr>
                 <tr><th>Kurs</th><td id="current-price">{{ current_price if current_price else "Keine Daten" }}</td></tr>
                 <tr><th>All-Time-High</th><td id="all-time-high">{{ all_time_high if all_time_high else "Keine Daten" }}</td></tr>
-                
             </table>
         </div>
 
         <!-- Plotly Chart -->
         <div class="col-md-8">
             <h3>📉 Kursverlauf</h3>
-            {{ plotly_chart | safe }}
+            <div id="chart-container"></div> <!-- Chart wird hier gerendert -->
 
-            <div class="btn-group mt-3">
-                <a href="{{ url_for('detail', ticker=stock.ticker, period='1d') }}" class="btn btn-secondary">1 Tag</a>
-                <a href="{{ url_for('detail', ticker=stock.ticker, period='1w') }}" class="btn btn-secondary">1 Woche</a>
-                <a href="{{ url_for('detail', ticker=stock.ticker, period='1m') }}" class="btn btn-secondary">1 Monat</a>
-                <a href="{{ url_for('detail', ticker=stock.ticker, period='1y') }}" class="btn btn-primary">1 Jahr</a>
+            <div class="btn-group mt-3" id="chart-buttons">
+                <button class="btn btn-secondary" onclick="updateChart('1d', this)">1 Tag</button>
+                <button class="btn btn-secondary" onclick="updateChart('5d', this)">1 Woche</button>
+                <button class="btn btn-secondary" onclick="updateChart('1mo', this)">1 Monat</button>
+                <button class="btn btn-secondary" onclick="updateChart('3mo', this)">3 Monate</button>
+                <button class="btn btn-secondary" onclick="updateChart('6mo', this)">6 Monate</button>
+                <button class="btn btn-primary" onclick="updateChart('1y', this)">1 Jahr</button>
             </div>
+            
         </div>
     </div>
+
+    <!-- Plotly Script -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        function updateChart(period, button) {
+            const ticker = "{{ stock.ticker }}";
+            console.log(`📢 Button geklickt: Zeitraum=${period}, Ticker=${ticker}`);
+
+            // 🛑 Setzt den aktiven Button
+            document.querySelectorAll("#chart-buttons button").forEach(btn => {
+                btn.classList.remove("btn-primary");
+                btn.classList.add("btn-secondary");
+            });
+            button.classList.remove("btn-secondary");
+            button.classList.add("btn-primary");
+
+            fetch(`/api/get_chart_data?ticker=${ticker}&period=${period}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("🔄 API Response erhalten:", data);
+
+                    if (data.error) {
+                        console.error("❌ Fehler in API:", data.error);
+                        return;
+                    }
+
+                    console.log(`📊 ${data.dates.length} Datenpunkte erhalten`);
+
+                    for (let i = 0; i < Math.min(data.dates.length, 5); i++) {
+                        console.log(`📅 ${data.dates[i]}: ${data.prices[i]}`);
+                    }
+
+                    Plotly.purge("chart-container");
+
+                    const newChartData = [{
+                        x: data.dates,
+                        y: data.prices,
+                        mode: 'lines',
+                        name: `Kursverlauf (${period})`
+                    }];
+
+                    const layout = {
+                        title: "Aktienkurs",
+                        paper_bgcolor: "#1e1e1e",  // 🚀 Dark mode background
+                        plot_bgcolor: "#1e1e1e",   // 🚀 Dark mode chart background
+                        font: { color: "#ffffff" }, // 🚀 White text for dark mode
+                        xaxis: {
+                            title: "Datum",
+                            tickangle: -45,
+                            tickformat: "%Y-%m-%d<br>%H:%M",
+                            showgrid: true,
+                            gridcolor: "#444444", // 🚀 Dark mode grid lines
+                            zeroline: false,
+                            rangeslider: { visible: true }
+                        },
+                        yaxis: {
+                            title: "Preis",
+                            showgrid: true,
+                            gridcolor: "#444444", // 🚀 Dark mode grid lines
+                            zeroline: true,
+                            autorange: true
+                        },
+                        template: "plotly_dark",  // 🚀 Keep dark theme enabled
+                        margin: { l: 40, r: 40, t: 50, b: 80 },
+                        hovermode: "x unified"
+                    };
+
+                    console.log("📢 Aktuelles Chart-Template:", layout.template);
+
+                    console.log("🖌️ Neues Chart wird gerendert...");
+                    Plotly.newPlot("chart-container", newChartData, { ...layout, template: "plotly_dark" });
+
+                })
+                .catch(error => console.error("❌ Fehler beim Abrufen der Daten:", error));
+        }
+        
+        // 🚀 Fix: Automatisch 1 Jahr beim Laden anzeigen
+        document.addEventListener("DOMContentLoaded", function() {
+            const defaultButton = document.querySelector("#chart-buttons .btn-primary");
+            updateChart('1y', defaultButton);
+        });
+
+        </script>
+
+        <h3>📢 Aktien-News & Meinungen</h3>
+
+        <div class="row mt-4">
+            <!-- Yahoo Finance News Kachel -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">📢 Yahoo Finance News</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul id="yahoo-news-list" class="list-unstyled">
+                            <li>Lade News...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MarketScreener News Kachel -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">📢 MarketScreener News</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul id="marketscreener-news-list" class="list-unstyled">
+                            <li>Lade News...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tagesschau News Kachel -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">📢 Tagesschau News</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul id="tagesschau-news-list" class="list-unstyled">
+                            <li>Lade News...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const ticker = "{{ stock.ticker }}";  
+            loadYahooNews(ticker);
+            loadMarketScreenerNews(ticker);
+            loadTagesschauNews();
+        });
+
+        // ✅ Yahoo Finance News abrufen
+        function loadYahooNews(ticker) {
+            fetch(`/yahoo_news/${ticker}`)
+                .then(response => response.json())
+                .then(data => {
+                    const newsList = document.getElementById("yahoo-news-list");
+                    newsList.innerHTML = "";  
+
+                    if (data.news.length > 0) {
+                        data.news.forEach(news => {
+                            const li = document.createElement("li");
+                            li.innerHTML = `<a href="${news.link}" target="_blank" class="text-primary">${news.title}</a>`;
+                            newsList.appendChild(li);
+                        });
+                    } else {
+                        newsList.innerHTML = "<li>Keine News gefunden</li>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Fehler beim Laden der Yahoo News:", error);
+                    document.getElementById("yahoo-news-list").innerHTML = "<li>Fehler beim Laden der News</li>";
+                });
+        }
+
+        // ✅ MarketScreener News abrufen
+        function loadMarketScreenerNews(ticker) {
+            fetch(`/marketscreener_news/${ticker}`)
+                .then(response => response.json())
+                .then(data => {
+                    const newsList = document.getElementById("marketscreener-news-list");
+                    newsList.innerHTML = "";  
+
+                    if (data.news.length > 0) {
+                        data.news.forEach(news => {
+                            const li = document.createElement("li");
+                            li.innerHTML = `<a href="${news.link}" target="_blank" class="text-primary">${news.title}</a>`;
+                            newsList.appendChild(li);
+                        });
+                    } else {
+                        newsList.innerHTML = "<li>Keine News gefunden</li>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Fehler beim Laden der MarketScreener News:", error);
+                    document.getElementById("marketscreener-news-list").innerHTML = "<li>Fehler beim Laden der News</li>";
+                });
+        }
+
+        // ✅ Tagesschau News abrufen
+        function loadTagesschauNews() {
+            fetch(`/tagesschau_news`)
+                .then(response => response.json())
+                .then(data => {
+                    const newsList = document.getElementById("tagesschau-news-list");
+                    newsList.innerHTML = "";  
+
+                    if (data.news.length > 0) {
+                        data.news.forEach(news => {
+                            const li = document.createElement("li");
+                            li.innerHTML = `<a href="${news.link}" target="_blank" class="text-primary">${news.title}</a>`;
+                            newsList.appendChild(li);
+                        });
+                    } else {
+                        newsList.innerHTML = "<li>Keine News gefunden</li>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Fehler beim Laden der Tagesschau News:", error);
+                    document.getElementById("tagesschau-news-list").innerHTML = "<li>Fehler beim Laden der News</li>";
+                });
+        }
+        </script>
+
 
 {% endblock %}

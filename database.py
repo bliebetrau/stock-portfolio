@@ -40,6 +40,36 @@ def create_tables():
         );
     """)
 
+       # Neue Tabelle für Dividendenaktien hinzufügen
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS dividend_stocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            last_updated TEXT NOT NULL,
+            stock_name TEXT NOT NULL,
+            isin TEXT UNIQUE NOT NULL,
+            link TEXT,
+            market_cap REAL,
+            stock_price REAL,
+            stock_price_ath REAL,
+            avg_price_gain_10y REAL,
+            dividend_yield REAL,
+            total_return_10y REAL,
+            dividends_per_year INTEGER,
+            increasing_since INTEGER,
+            no_cut_since INTEGER,
+            dividend_stability REAL,
+            payout_ratio_profit REAL,
+            payout_ratio_cashflow REAL,
+            avg_div_growth_5y REAL,
+            avg_div_growth_10y REAL,
+            special_dividends INTEGER,
+            future_viability INTEGER,
+            business_model_future INTEGER,
+            score REAL
+        );
+    """)
+
+
     conn.commit()
     conn.close()
 
