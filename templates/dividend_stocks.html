@@ -16,6 +16,7 @@
                     <th>Name</th>
                     <th>ISIN</th>
                     <th>MarketCap</th>
+                    <th>Aktueller Kurs</th>
                     <th>Kurs ATH</th>
                     <th>⌀ Gesamtrendite 10J (%)</th>
                     <th>Dividendenrendite</th>
@@ -70,12 +71,17 @@
 
                     <td>{{ stock["isin"] }}</td>
 
-                    <!-- Werte mit Hintergrundfarbe basierend auf dem Score -->
-                    {% for key, value in stock["scores"].items() %}
-                    <td class="px-2 py-1 
-                        {% if value == -1 %}table-danger{% elif value == 0 %}table-warning{% elif value == 1 %}table-success{% else %}table-light{% endif %}">
-                        {{ "%.2f"|format(stock[key]) }}
-                    </td>
+                    <!-- Alle Kennzahlen mit Scores -->
+                    {% for key, value in stock.items() %}
+                        {% if key not in ["id", "stock_name", "isin", "link", "total_score", "scores"] %}
+                        <td class="px-2 py-1 
+                            {% if stock['scores'][key] == -1 %}table-danger
+                            {% elif stock['scores'][key] == 0 %}table-warning
+                            {% elif stock['scores'][key] == 1 %}table-success
+                            {% else %}table-light{% endif %}">
+                            {{ "%.2f"|format(value) }}
+                        </td>
+                        {% endif %}
                     {% endfor %}
 
                     <!-- Score-Spalte -->
