@@ -1,0 +1,11 @@
+Prompt für die Extraktion von Dividenden-Kennzahlen aus einer Webseite:
+
+Ich lade dir eine CSV-Datei mit der Struktur und Beispieldaten hoch. Die erste Zeile der Datei enthält die Kennzahlen, die extrahiert werden müssen.
+Anschließend kopiere ich dir den Website-Text.
+Deine Aufgabe:
+
+Extrahiere die relevanten Kennzahlen aus dem Text und gleiche sie mit den Spaltennamen der CSV ab.
+Falls nötig, übersetze die Werte ins Englische (z. B. "Dividendenrendite" → "dividend_yield").
+Zeige die extrahierten Daten als Tabelle an.
+Erstelle eine neue CSV-Datei mit den extrahierten Daten.
+Falls du das Skript automatisieren möchtest, kannst du mir jederzeit den neuen Website-Text und die bestehende CSV-Struktur hochladen. Ich generiere dann die Datei für dich. 😊 ​

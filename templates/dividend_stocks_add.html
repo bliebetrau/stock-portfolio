@@ -16,7 +16,7 @@
     <hr>
 
     <!-- Manuelles Eingabeformular -->
-    <form method="POST">
+    <form method="POST" action="{{ url_for('dividend_stocks.add_dividend_stock') }}">
         <div class="mb-3">
             <label class="form-label">Name der Aktie</label>
             <input type="text" class="form-control" name="stock_name" value="{{ form_data.get('stock_name', '') if form_data else '' }}" required>
@@ -30,7 +30,7 @@
             <input type="url" class="form-control" name="link" value="{{ form_data.get('link', '') if form_data else '' }}">
         </div>
         <div class="mb-3">
-            <label class="form-label">MarketCap (in Milliarden)</label>
+            <label class="form-label">MarketCap (Mrd.)</label>
             <input type="number" step="0.1" class="form-control" name="market_cap" value="{{ form_data.get('market_cap', '') if form_data else '' }}">
         </div>
         <div class="mb-3">
@@ -38,8 +38,24 @@
             <input type="number" step="0.01" class="form-control" name="stock_price" value="{{ form_data.get('stock_price', '') if form_data else '' }}">
         </div>
         <div class="mb-3">
-            <label class="form-label">Dividendenrendite (%)</label>
+            <label class="form-label">Kurs ATH</label>
+            <input type="number" step="0.01" class="form-control" name="ath_price" value="{{ form_data.get('ath_price', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">⌀ Kursgewinne 10J (%)</label>
+            <input type="number" step="0.1" class="form-control" name="avg_10y_price_gain" value="{{ form_data.get('avg_10y_price_gain', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Dividendenrendite Aktuell (%)</label>
             <input type="number" step="0.01" class="form-control" name="dividend_yield" value="{{ form_data.get('dividend_yield', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Gesamtrendite 10J (%)</label>
+            <input type="number" step="0.1" class="form-control" name="total_10y_return" value="{{ form_data.get('total_10y_return', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Dividenden im Jahr</label>
+            <input type="number" class="form-control" name="dividends_per_year" value="{{ form_data.get('dividends_per_year', '') if form_data else '' }}">
         </div>
         <div class="mb-3">
             <label class="form-label">Steigert seit (Jahre)</label>
@@ -48,6 +64,10 @@
         <div class="mb-3">
             <label class="form-label">Keine Senkung seit (Jahre)</label>
             <input type="number" class="form-control" name="no_cut_since" value="{{ form_data.get('no_cut_since', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Stabilität Dividende</label>
+            <input type="number" step="0.1" class="form-control" name="dividend_stability" value="{{ form_data.get('dividend_stability', '') if form_data else '' }}">
         </div>
         <div class="mb-3">
             <label class="form-label">Payout Gewinn (%)</label>
@@ -69,6 +89,15 @@
             <label class="form-label">Sonderdividenden (Anzahl)</label>
             <input type="number" class="form-control" name="special_dividends" value="{{ form_data.get('special_dividends', '') if form_data else '' }}">
         </div>
+        <div class="mb-3">
+            <label class="form-label">Zukunftsfähigkeit (1-5)</label>
+            <input type="number" class="form-control" name="future_viability" value="{{ form_data.get('future_viability', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Geschäftsmodell Zukunftsfähigkeit (1-5)</label>
+            <input type="number" class="form-control" name="business_model_future" value="{{ form_data.get('business_model_future', '') if form_data else '' }}">
+        </div>
+
         <button type="submit" class="btn btn-success">✅ Speichern</button>
         <a href="{{ url_for('dividend_stocks.list_dividend_stocks') }}" class="btn btn-secondary">🔙 Zurück</a>
     </form>
