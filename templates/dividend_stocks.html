@@ -1,20 +1,91 @@
-<tbody>
-    {% for stock in stocks %}
-    <tr>
-        <td class="sticky-col">{{ stock["stock_name"] }}</td>
-        <td>{{ stock["isin"] }}</td>
-        <td><a href="{{ stock['link'] }}" target="_blank">🔗</a></td>
+{% extends "base.html" %}
 
-        {% for key, value in stock["scores"].items() %}
-        <td class="{% if value == -1 %}bg-danger{% elif value == 0 %}bg-secondary{% else %}bg-success{% endif %}">
-            {{ "%.2f"|format(stock.get(key, 0)) }}
-        </td>
-        {% endfor %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">📈 Dividendenaktien-Analyse</h2>
 
-        <!-- Score-Spalte -->
-        <td class="fw-bold {% if stock['total_score'] < 0 %}bg-danger{% elif stock['total_score'] == 0 %}bg-secondary{% else %}bg-success{% endif %}">
-            {{ stock["total_score"] }}
-        </td>
-    </tr>
-    {% endfor %}
-</tbody>
+    <!-- Button zum Hinzufügen einer neuen Aktie -->
+    <a href="{{ url_for('dividend_stocks.add_dividend_stock') }}" class="btn btn-primary my-2">➕ Aktie hinzufügen</a>
+
+    <!-- Scrollbare Tabelle mit fixiertem Header -->
+    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+        <table class="table table-sm table-striped table-bordered text-center align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Aktionen</th>
+                    <th>Name</th>
+                    <th>ISIN</th>
+                    <th>MarketCap</th>
+                    <th>Kurs ATH</th>
+                    <th>⌀ Gesamtrendite 10J (%)</th>
+                    <th>Dividendenrendite</th>
+                    <th>Gesamtrendite 10J</th>
+                    <th>Dividenden p. Jahr</th>
+                    <th>Steigert seit</th>
+                    <th>Keine Senkung seit</th>
+                    <th>Dividenden-Stabilität</th>
+                    <th>Payout Gewinn</th>
+                    <th>Payout Cashflow</th>
+                    <th>⌀ Div-Wachstum 5J</th>
+                    <th>⌀ Div-Wachstum 10J</th>
+                    <th>Sonderdividenden</th>
+                    <th>Zukunftsfähigkeit</th>
+                    <th>Geschäftsmodell</th>
+                    <th>Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stocks %}
+                <tr>
+                    <!-- Bearbeiten & Löschen -->
+                    <td class="text-start">
+                        <a href="{{ url_for('dividend_stocks.edit_dividend_stock', stock_id=stock['id']) }}" class="btn btn-sm btn-outline-warning">✏️</a>
+                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ stock['id'] }}">🗑️</button>
+                    
+                        <!-- Modal für Bestätigung des Löschens -->
+                        <div class="modal fade" id="deleteModal{{ stock['id'] }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteModalLabel">❌ Aktie löschen</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Bist du sicher, dass du <strong>{{ stock['stock_name'] }}</strong> löschen möchtest? Dies kann nicht rückgängig gemacht werden!
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                                        <a href="{{ url_for('dividend_stocks.delete_dividend_stock', stock_id=stock['id']) }}" class="btn btn-danger">Ja, löschen</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Name mit Link -->
+                    <td class="fw-bold text-start" style="white-space: nowrap;">
+                        {{ stock["stock_name"] }}
+                        <a href="{{ stock['link'] }}" target="_blank" class="text-decoration-none">🔗</a>
+                    </td>
+
+                    <td>{{ stock["isin"] }}</td>
+
+                    <!-- Werte mit Hintergrundfarbe basierend auf dem Score -->
+                    {% for key, value in stock["scores"].items() %}
+                    <td class="px-2 py-1 
+                        {% if value == -1 %}table-danger{% elif value == 0 %}table-warning{% elif value == 1 %}table-success{% else %}table-light{% endif %}">
+                        {{ "%.2f"|format(stock[key]) }}
+                    </td>
+                    {% endfor %}
+
+                    <!-- Score-Spalte -->
+                    <td class="fw-bold {% if stock['total_score'] > 10 %}table-success{% elif stock['total_score'] > 5 %}table-info{% elif stock['total_score'] > 0 %}table-warning{% else %}table-danger{% endif %}">
+                        {{ stock["total_score"] }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

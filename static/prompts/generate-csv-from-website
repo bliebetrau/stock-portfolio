@@ -1,11 +1,40 @@
 Prompt für die Extraktion von Dividenden-Kennzahlen aus einer Webseite:
 
-Ich lade dir eine CSV-Datei mit der Struktur und Beispieldaten hoch. Die erste Zeile der Datei enthält die Kennzahlen, die extrahiert werden müssen.
+Folgend, eine CSV-Datei mit der Struktur und Beispieldaten. 
+
+stock_name;isin;link;market_cap;stock_price;ath_price;avg_10y_price_gain;dividend_yield;total_10y_return;dividends_per_year;increasing_since;no_cut_since;dividend_stability;payout_ratio_profit;payout_ratio_cashflow;avg_div_growth_5y;avg_div_growth_10y;special_dividends;future_viability;business_model_future
+Brookfield Renewable;BMG162521014;https://www.brookfieldrenewable.com;12.5;32.7;45.3;6.2;4.8;9.5;4;12;15;0.88;65;70;5.3;5.8;0;5;5
+
+
+Die erste Zeile enthält die Kennzahlen, die extrahiert werden müssen.
 Anschließend kopiere ich dir den Website-Text.
 Deine Aufgabe:
 
 Extrahiere die relevanten Kennzahlen aus dem Text und gleiche sie mit den Spaltennamen der CSV ab.
+Die Spaltennamen der CSV sind nicht zu verändern.
 Falls nötig, übersetze die Werte ins Englische (z. B. "Dividendenrendite" → "dividend_yield").
 Zeige die extrahierten Daten als Tabelle an.
 Erstelle eine neue CSV-Datei mit den extrahierten Daten.
 Falls du das Skript automatisieren möchtest, kannst du mir jederzeit den neuen Website-Text und die bestehende CSV-Struktur hochladen. Ich generiere dann die Datei für dich. 😊 ​
+
+
+Prompt für die Extraktion von Dividenden-Kennzahlen aus einer Webseite:
+
+Hier ist die CSV-Datei mit der Struktur und Beispieldaten:
+
+stock_name;isin;link;market_cap;stock_price;ath_price;annual_return;dividend_yield;total_10y_return;dividends_per_year;increasing_since;no_cut_since;dividend_stability;payout_ratio_profit;payout_ratio_cashflow;avg_div_growth_5y;avg_div_growth_10y;special_dividends;future_viability;business_model_future
+Brookfield Renewable;BMG162521014;https://www.brookfieldrenewable.com;12.5;32.7;45.3;6.2;4.8;9.5;4;12;15;0.88;65;70;5.3;5.8;0;5;5
+
+Die erste Zeile enthält die Kennzahlen, die extrahiert werden müssen.
+
+Hier ist der Website-Text:
+(Kopiere hier den vollständigen Website-Text mit den Aktienkennzahlen.)
+
+Deine Aufgabe:
+✅ Extrahiere die relevanten Kennzahlen aus dem Website-Text und gleiche sie mit den Spaltennamen der CSV ab.
+✅ Ändere keine Spaltennamen! Falls nötig, übersetze die Werte ins Englische (z. B. "Dividendenrendite" → "dividend_yield").
+✅ Zeige die extrahierten Daten in einer Tabelle an.
+✅ Erstelle eine neue CSV-Datei mit den extrahierten Daten.
+
+Falls du das Skript automatisieren möchtest, kannst du mir jederzeit einen neuen Website-Text und die bestehende CSV-Struktur hochladen. Ich generiere dann die Datei für dich. 😊 🚀
+

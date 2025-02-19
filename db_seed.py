@@ -4,41 +4,40 @@ from datetime import datetime
 DB_PATH = "data/portfolio.db"
 
 def seed_database():
-    """Fügt Testdaten in die Datenbank ein."""
+    """Befüllt die Datenbank mit initialen Dividendenaktien-Testdaten."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Testdaten für Watchlist
-    cursor.execute("INSERT INTO watchlist (ticker, name, isin, wkn, added_date, notes) VALUES (?, ?, ?, ?, ?, ?)",
-                   ("AAPL", "Apple Inc.", "US0378331005", "865985", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Wachstumsaktie"))
+    # Testdaten für Dividendenaktien
+    test_data = [
+        (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Realty Income", "US7561091049", "https://www.realtyincome.com", 
+            45.2, 58.5, 75.0, 7.9, 4.7, 7.9, 12, 25, 30, 0.9, 80, 75, 4.2, 5.1, 1, 5, 5, 85
+        ),
+        (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Höegh Autoliners", "NO0010936035", "https://www.hoeghautoliners.com", 
+            2.8, 63.5, 68.7, 7.8, 9.2, 12.3, 4, 5, 10, 0.85, 70, 65, 6.5, 7.0, 1, 4, 5, 80
+        ),
+        (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Microsoft", "US5949181045", "https://www.microsoft.com", 
+            2900.0, 400.5, 415.0, 12.1, 0.8, 15.2, 4, 19, 30, 0.95, 35, 30, 8.5, 9.2, 0, 5, 5, 95
+        ),
+    ]
 
-    cursor.execute("INSERT INTO watchlist (ticker, name, isin, wkn, added_date, notes) VALUES (?, ?, ?, ?, ?, ?)",
-                   ("MSFT", "Microsoft Corporation", "US5949181045", "870747", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Langfristiges Investment"))
-
-    # Testdaten für Trades
-    cursor.execute("INSERT INTO trades (ticker, name, date, type, shares, price_per_share, currency, total_price, fees, total_cost, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   ("AAPL", "Apple Inc.", "2025-02-16", "buy", 10, 145.50, "USD", 1455.00, 5.00, 1460.00, "Testkauf"))
-
-    cursor.execute("INSERT INTO trades (ticker, name, date, type, shares, price_per_share, currency, total_price, fees, total_cost, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   ("MSFT", "Microsoft Corporation", "2025-02-16", "buy", 5, 320.00, "USD", 1600.00, 3.00, 1597.00, "Teilverkauf"))
-
-    # Testdaten für Dividendenaktien (Korrigierte Spaltennamen!)
-    cursor.execute("""
+    # SQL-Query für das Einfügen der Testdaten
+    cursor.executemany("""
         INSERT INTO dividend_stocks (
-            last_updated, stock_name, isin, link, market_cap, stock_price, dividend_yield, 
-            total_10y_return, increasing_since, no_cut_since, dividend_stability, 
-            payout_ratio_profit, avg_div_growth_5y, avg_div_growth_10y, 
-            future_viability, business_model_future, score
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-        "Realty Income", "US7561091049", "https://www.realtyincome.com", 45.2, 58.5, 4.7, 
-        7.9, 25, 30, 90, 80, 4.2, 5.1, 5, 5, 85
-    ))
+            last_updated, stock_name, isin, link, market_cap, stock_price, ath_price, annual_return,
+            dividend_yield, total_10y_return, dividends_per_year, increasing_since, no_cut_since, 
+            dividend_stability, payout_ratio_profit, payout_ratio_cashflow, avg_div_growth_5y, 
+            avg_div_growth_10y, special_dividends, future_viability, business_model_future, score
+        ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    """, test_data)
 
     conn.commit()
     conn.close()
-    print("✅ Testdaten erfolgreich eingefügt.")
+    print("✅ Testdaten erfolgreich in die Datenbank eingetragen.")
 
 if __name__ == "__main__":
     seed_database()

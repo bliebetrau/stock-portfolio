@@ -11,6 +11,16 @@ ALLOWED_EXTENSIONS = {"csv"}
 
 bp = Blueprint("dividend_stocks", __name__, url_prefix="/dividend-stocks")
 
+def safe_value(value):
+    """Falls None, wird die Berechnung ignoriert (kein Score)."""
+    return float(value) if value is not None else 0
+
+def safe_div(a, b):
+    """Falls Division nicht möglich, gib 0 zurück."""
+    if b is None or b == 0:
+        return 0  # Keine Berechnung durchführen
+    return a / b
+
 @bp.route("/")
 def list_dividend_stocks():
     """Listet alle Dividendenaktien aus der Datenbank auf und berechnet Scores."""
@@ -20,7 +30,7 @@ def list_dividend_stocks():
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, stock_name, isin, link, market_cap, stock_price, ath_price, 
-               avg_10y_price_gain, dividend_yield, total_10y_return, dividends_per_year, 
+               annual_return, dividend_yield, total_10y_return, dividends_per_year, 
                increasing_since, no_cut_since, dividend_stability, payout_ratio_profit, 
                payout_ratio_cashflow, avg_div_growth_5y, avg_div_growth_10y, special_dividends, 
                future_viability, business_model_future 
@@ -40,7 +50,7 @@ def list_dividend_stocks():
             "market_cap": stock[4],
             "stock_price": stock[5],
             "ath_price": stock[6],
-            "avg_10y_price_gain": stock[7],
+            "annual_return": stock[7],  # Hier angepasst
             "dividend_yield": stock[8],
             "total_10y_return": stock[9],
             "dividends_per_year": stock[10],
@@ -66,6 +76,7 @@ def list_dividend_stocks():
     return render_template("dividend_stocks.html", stocks=stocks_with_scores)
 
 
+
 @bp.route("/add", methods=["GET", "POST"])
 def add_dividend_stock():
     """Fügt eine neue Dividendenaktie hinzu – manuell per Formular oder durch CSV-Upload."""
@@ -78,7 +89,7 @@ def add_dividend_stock():
             market_cap = float(request.form.get("market_cap", 0) or 0)
             stock_price = float(request.form.get("stock_price", 0) or 0)
             ath_price = float(request.form.get("ath_price", 0) or 0)
-            avg_10y_price_gain = float(request.form.get("avg_10y_price_gain", 0) or 0)
+            annual_return = float(request.form.get("annual_return", 0) or 0)  # Hier geändert
             dividend_yield = float(request.form.get("dividend_yield", 0) or 0)
             total_10y_return = float(request.form.get("total_10y_return", 0) or 0)
             dividends_per_year = int(request.form.get("dividends_per_year", 0) or 0)
@@ -103,14 +114,14 @@ def add_dividend_stock():
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO dividend_stocks (
-                    last_updated, stock_name, isin, link, market_cap, stock_price, ath_price, avg_10y_price_gain, 
+                    last_updated, stock_name, isin, link, market_cap, stock_price, ath_price, annual_return,
                     dividend_yield, total_10y_return, dividends_per_year, increasing_since, no_cut_since, 
-                    dividend_stability, payout_ratio_profit, payout_ratio_cashflow, 
-                    avg_div_growth_5y, avg_div_growth_10y, special_dividends, 
-                    future_viability, business_model_future, score
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    dividend_stability, payout_ratio_profit, payout_ratio_cashflow, avg_div_growth_5y, 
+                    avg_div_growth_10y, special_dividends, future_viability, business_model_future, score
+                ) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                last_updated, stock_name, isin, link, market_cap, stock_price, ath_price, avg_10y_price_gain, 
+                last_updated, stock_name, isin, link, market_cap, stock_price, ath_price, annual_return, 
                 dividend_yield, total_10y_return, dividends_per_year, increasing_since, no_cut_since, 
                 dividend_stability, payout_ratio_profit, payout_ratio_cashflow, 
                 avg_div_growth_5y, avg_div_growth_10y, special_dividends, 
@@ -186,17 +197,17 @@ def evaluate_metric(value, neg_threshold, neu_threshold, pos_threshold):
 def calculate_individual_scores(stock):
     """
     Berechnet eine individuelle Bewertung für jede Kennzahl (-1, 0, +1).
-    Falls eine Kennzahl None ist, wird sie mit 0 ersetzt.
+    Falls eine Kennzahl None ist, wird sie ignoriert.
     """
 
-    def safe_value(value, default=0):
-        """Hilfsfunktion, um None-Werte mit einem Standardwert zu ersetzen."""
-        return float(value) if value is not None else default
+    def safe_value(value):
+        """Falls None, wird der Wert als 0 interpretiert."""
+        return float(value) if value is not None else 0
 
-    def safe_div(a, b, default=0):
-        """Hilfsfunktion für sicheres Dividieren, falls b None oder 0 ist."""
+    def safe_div(a, b):
+        """Falls Division nicht möglich, gib 0 zurück."""
         if b is None or b == 0:
-            return default
+            return 0
         return a / b
 
     # Berechnung des Verhältnisses von aktuellem Kurs zum Allzeithoch
@@ -204,26 +215,110 @@ def calculate_individual_scores(stock):
     ath_price = safe_value(stock.get('ath_price'))
     stock_price_ath_ratio = safe_div(stock_price, ath_price)
 
-    scores = {
-        "market_cap": evaluate_metric(safe_value(stock.get('market_cap')), 2, (2, 10), 10),
-        "ath_price": evaluate_metric(stock_price_ath_ratio, 0.9, (0.8, 0.9), 0.8),  # Korrektur hier
-        "avg_10y_price_gain": evaluate_metric(safe_value(stock.get('avg_10y_price_gain')), 3, (3, 7), 7),
-        "dividend_yield": evaluate_metric(safe_value(stock.get('dividend_yield')), 3, (3, 5), 5),
-        "total_10y_return": evaluate_metric(safe_value(stock.get('total_10y_return')), 5, (5, 10), 10),
-        "dividends_per_year": evaluate_metric(safe_value(stock.get('dividends_per_year')), 2, (2, 4), 4),
-        "increasing_since": evaluate_metric(safe_value(stock.get('increasing_since')), 5, (5, 10), 10),
-        "no_cut_since": evaluate_metric(safe_value(stock.get('no_cut_since')), 5, (5, 15), 15),
-        "dividend_stability": evaluate_metric(safe_value(stock.get('dividend_stability')), 0.7, (0.7, 0.9), 0.9),
-        "payout_ratio_profit": evaluate_metric(safe_value(stock.get('payout_ratio_profit')), 20, (20, 80), 60),
-        "payout_ratio_cashflow": evaluate_metric(safe_value(stock.get('payout_ratio_cashflow')), 20, (20, 80), 60),
-        "avg_div_growth_5y": evaluate_metric(safe_value(stock.get('avg_div_growth_5y')), 2, (2, 4), 4),
-        "avg_div_growth_10y": evaluate_metric(safe_value(stock.get('avg_div_growth_10y')), 2, (2, 4), 4),
-        "special_dividends": evaluate_metric(safe_value(stock.get('special_dividends')), 0, (1, 2), 2),
-        "future_viability": evaluate_metric(safe_value(stock.get('future_viability')), 3, (3, 4), 5),
-        "business_model_future": evaluate_metric(safe_value(stock.get('business_model_future')), 3, (3, 4), 5),
-    }
+    scores = {}
 
-    # Gesamt-Score berechnen (Summe aller Einzelwerte)
+    def add_score(key, value, neg_threshold, neu_threshold, pos_threshold):
+        """Hilfsfunktion zum Hinzufügen eines Scores, falls gültiger Wert existiert."""
+        if value is not None:
+            scores[key] = evaluate_metric(value, neg_threshold, neu_threshold, pos_threshold)
+        else:
+            scores[key] = 0  # Falls keine Daten vorhanden, neutral
+
+    # Scoring-Bewertung der einzelnen Kennzahlen
+    add_score("market_cap", safe_value(stock.get('market_cap')), 2, (2, 10), 10)
+    add_score("ath_price", stock_price_ath_ratio, 0.9, (0.8, 0.9), 0.8)
+    add_score("annual_return", safe_value(stock.get('annual_return')), 3, (3, 7), 7)
+    add_score("dividend_yield", safe_value(stock.get('dividend_yield')), 3, (3, 5), 5)
+    add_score("total_10y_return", safe_value(stock.get('total_10y_return')), 5, (5, 10), 10)
+    add_score("dividends_per_year", safe_value(stock.get('dividends_per_year')), 2, (2, 4), 4)
+    add_score("increasing_since", safe_value(stock.get('increasing_since')), 5, (5, 10), 10)
+    add_score("no_cut_since", safe_value(stock.get('no_cut_since')), 5, (5, 15), 15)
+    add_score("dividend_stability", safe_value(stock.get('dividend_stability')), 0.7, (0.7, 0.9), 0.9)
+    add_score("payout_ratio_profit", safe_value(stock.get('payout_ratio_profit')), 20, (20, 80), 60)
+    add_score("payout_ratio_cashflow", safe_value(stock.get('payout_ratio_cashflow')), 20, (20, 80), 60)
+    add_score("avg_div_growth_5y", safe_value(stock.get('avg_div_growth_5y')), 2, (2, 4), 4)
+    add_score("avg_div_growth_10y", safe_value(stock.get('avg_div_growth_10y')), 2, (2, 4), 4)
+    add_score("special_dividends", safe_value(stock.get('special_dividends')), 0, (1, 2), 2)
+    add_score("future_viability", safe_value(stock.get('future_viability')), 3, (3, 4), 5)
+    add_score("business_model_future", safe_value(stock.get('business_model_future')), 3, (3, 4), 5)
+
+    # Gesamt-Score berechnen: Nur Werte summieren, die nicht `None` sind
     total_score = sum(scores.values())
 
     return scores, total_score
+
+@bp.route("/edit/<int:stock_id>", methods=["GET", "POST"])
+def edit_dividend_stock(stock_id):
+    """Bearbeitet eine bestehende Aktie."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+        try:
+            stock_name = request.form.get("stock_name", "").strip()
+            isin = request.form.get("isin", "").strip()
+            link = request.form.get("link", "").strip()
+            market_cap = float(request.form.get("market_cap", 0) or 0)
+            stock_price = float(request.form.get("stock_price", 0) or 0)
+            ath_price = float(request.form.get("ath_price", 0) or 0)
+            annual_return = float(request.form.get("annual_return", 0) or 0)
+            dividend_yield = float(request.form.get("dividend_yield", 0) or 0)
+            total_10y_return = float(request.form.get("total_10y_return", 0) or 0)
+            dividends_per_year = int(request.form.get("dividends_per_year", 0) or 0)
+            increasing_since = int(request.form.get("increasing_since", 0) or 0)
+            no_cut_since = int(request.form.get("no_cut_since", 0) or 0)
+            dividend_stability = float(request.form.get("dividend_stability", 0) or 0)
+            payout_ratio_profit = float(request.form.get("payout_ratio_profit", 0) or 0)
+            payout_ratio_cashflow = float(request.form.get("payout_ratio_cashflow", 0) or 0)
+            avg_div_growth_5y = float(request.form.get("avg_div_growth_5y", 0) or 0)
+            avg_div_growth_10y = float(request.form.get("avg_div_growth_10y", 0) or 0)
+            special_dividends = int(request.form.get("special_dividends", 0) or 0)
+            future_viability = int(request.form.get("future_viability", 0) or 0)
+            business_model_future = int(request.form.get("business_model_future", 0) or 0)
+
+            cursor.execute("""
+                UPDATE dividend_stocks
+                SET stock_name=?, isin=?, link=?, market_cap=?, stock_price=?, ath_price=?, 
+                    annual_return=?, dividend_yield=?, total_10y_return=?, dividends_per_year=?, 
+                    increasing_since=?, no_cut_since=?, dividend_stability=?, payout_ratio_profit=?, 
+                    payout_ratio_cashflow=?, avg_div_growth_5y=?, avg_div_growth_10y=?, 
+                    special_dividends=?, future_viability=?, business_model_future=?
+                WHERE id=?
+            """, (stock_name, isin, link, market_cap, stock_price, ath_price, annual_return, 
+                  dividend_yield, total_10y_return, dividends_per_year, increasing_since, no_cut_since, 
+                  dividend_stability, payout_ratio_profit, payout_ratio_cashflow, 
+                  avg_div_growth_5y, avg_div_growth_10y, special_dividends, future_viability, 
+                  business_model_future, stock_id))
+            
+            conn.commit()
+            conn.close()
+
+            flash("✅ Aktie erfolgreich aktualisiert!", "success")
+            return redirect(url_for("dividend_stocks.list_dividend_stocks"))
+        except Exception as e:
+            flash(f"⚠️ Fehler beim Speichern: {str(e)}", "danger")
+
+    cursor.execute("SELECT * FROM dividend_stocks WHERE id=?", (stock_id,))
+    stock = cursor.fetchone()
+    conn.close()
+
+    if stock:
+        stock_dict = {desc[0]: value for desc, value in zip(cursor.description, stock)}
+        return render_template("dividend_stocks_edit.html", stock=stock_dict)
+    
+    flash("⚠️ Aktie nicht gefunden!", "danger")
+    return redirect(url_for("dividend_stocks.list_dividend_stocks"))
+
+@bp.route("/delete/<int:stock_id>", methods=["GET"])
+def delete_dividend_stock(stock_id):
+    """Löscht eine Aktie aus der Datenbank."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM dividend_stocks WHERE id=?", (stock_id,))
+    conn.commit()
+    conn.close()
+
+    flash("✅ Aktie erfolgreich gelöscht!", "success")
+    return redirect(url_for("dividend_stocks.list_dividend_stocks"))
+

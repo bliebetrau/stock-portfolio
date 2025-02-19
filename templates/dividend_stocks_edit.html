@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>✏️ Aktie bearbeiten</h2>
+
+    <!-- CSV-Upload -->
+    <form method="POST" action="{{ url_for('dividend_stocks.upload_csv') }}" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label">CSV-Datei hochladen</label>
+            <input type="file" class="form-control" name="file">
+        </div>
+        <button type="submit" class="btn btn-info">📂 CSV hochladen</button>
+    </form>
+
+    <hr>
+
+    <!-- Bearbeiten-Formular -->
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Name der Aktie</label>
+            <input type="text" class="form-control" name="stock_name" value="{{ stock.stock_name }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">ISIN</label>
+            <input type="text" class="form-control" name="isin" value="{{ stock.isin }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Info-Link</label>
+            <input type="url" class="form-control" name="link" value="{{ stock.link }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">MarketCap (in Milliarden)</label>
+            <input type="number" step="0.1" class="form-control" name="market_cap" value="{{ stock.market_cap }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Aktienkurs</label>
+            <input type="number" step="0.01" class="form-control" name="stock_price" value="{{ stock.stock_price }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Kurs ATH</label>
+            <input type="number" step="0.01" class="form-control" name="ath_price" value="{{ stock.ath_price }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">⌀ Gesamtrendite 10J (%)</label>
+            <input type="number" step="0.1" class="form-control" name="annual_return" value="{{ stock.annual_return }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Dividendenrendite (%)</label>
+            <input type="number" step="0.01" class="form-control" name="dividend_yield" value="{{ stock.dividend_yield }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Gesamtrendite 10J (%)</label>
+            <input type="number" step="0.1" class="form-control" name="total_10y_return" value="{{ stock.total_10y_return }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Dividenden im Jahr (Anzahl)</label>
+            <input type="number" class="form-control" name="dividends_per_year" value="{{ stock.dividends_per_year }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Steigert seit (Jahre)</label>
+            <input type="number" class="form-control" name="increasing_since" value="{{ stock.increasing_since }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Keine Senkung seit (Jahre)</label>
+            <input type="number" class="form-control" name="no_cut_since" value="{{ stock.no_cut_since }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Stabilität Dividende</label>
+            <input type="number" step="0.01" class="form-control" name="dividend_stability" value="{{ stock.dividend_stability }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Payout Gewinn (%)</label>
+            <input type="number" step="0.1" class="form-control" name="payout_ratio_profit" value="{{ stock.payout_ratio_profit }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Payout Cashflow (%)</label>
+            <input type="number" step="0.1" class="form-control" name="payout_ratio_cashflow" value="{{ stock.payout_ratio_cashflow }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">⌀ Dividenden-Steigerung 5 Jahre (%)</label>
+            <input type="number" step="0.1" class="form-control" name="avg_div_growth_5y" value="{{ stock.avg_div_growth_5y }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">⌀ Dividenden-Steigerung 10 Jahre (%)</label>
+            <input type="number" step="0.1" class="form-control" name="avg_div_growth_10y" value="{{ stock.avg_div_growth_10y }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Sonderdividenden (Anzahl)</label>
+            <input type="number" class="form-control" name="special_dividends" value="{{ stock.special_dividends }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Zukunftsfähigkeit (1-5)</label>
+            <input type="number" class="form-control" name="future_viability" value="{{ form_data.get('future_viability', '') if form_data else '' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Geschäftsmodell (1-5)</label>
+            <input type="number" class="form-control" name="business_model_future" value="{{ form_data.get('business_model_future', '') if form_data else '' }}">
+        </div>
+        <button type="submit" class="btn btn-success">✅ Speichern</button>
+        <a href="{{ url_for('dividend_stocks.list_dividend_stocks') }}" class="btn btn-secondary">🔙 Zurück</a>
+    </form>
+</div>
+{% endblock %}

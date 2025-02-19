@@ -51,7 +51,7 @@ def create_tables():
             market_cap REAL,
             stock_price REAL,
             ath_price REAL,
-            avg_10y_price_gain REAL,
+            annual_return REAL,
             dividend_yield REAL,
             total_10y_return REAL,
             dividends_per_year INTEGER,
